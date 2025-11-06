@@ -7,18 +7,35 @@ jobs:
   build:
     docker:
       - image: cimg/node:18.17
+    working_directory: ~/project
     steps:
       - checkout
+
       - run:
           name: Install frontend dependencies
           command: |
             cd INSY7314-PaymentPortal/frontend
             npm install
+
       - run:
           name: Install backend dependencies
           command: |
             cd INSY7314-PaymentPortal/Backend
             npm install
+
+      - run:
+          name: Run backend tests with coverage
+          command: |
+            cd INSY7314-PaymentPortal/Backend
+            npm run test:ci
+
+      - store_artifacts:
+          path: INSY7314-PaymentPortal/Backend/coverage
+          destination: coverage
+
+      - store_test_results:
+          path: INSY7314-PaymentPortal/Backend/test-results
+
       - sonarcloud/scan  # Add this step to run the scan
 
 workflows:
