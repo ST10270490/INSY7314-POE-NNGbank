@@ -146,23 +146,27 @@ if (process.env.TRUST_PROXY === 'true') {
 }
 
 // Configure MongoDB session store
-const sessionStore = MongoStore.create({
-  mongoUrl: uri,
-  collectionName: 'sessions',
-  ttl: 1 * 24 * 60 * 60 // 1 days
-});
+let sessionStore;
 
-// Setup session middleware
+if (process.env.NODE_ENV !== 'test') {
+  sessionStore = MongoStore.create({
+    mongoUrl: uri,
+    collectionName: 'sessions',
+    ttl: 1 * 24 * 60 * 60 // 1 days
+  });
+}
+
+
 app.use(session({
   name: process.env.SESSION_NAME || 'sid',
   secret: process.env.SESSION_SECRET || 'replace-with-secure-secret',
   resave: false,
   saveUninitialized: false,
-  store: sessionStore,
+  store: sessionStore || undefined, // skip store if null
   cookie: {
     httpOnly: true,
-    secure: true,         // ✅ Enforce HTTPS-only cookies
-    sameSite: 'none',     // ✅ Allow cross-origin HTTPS
+    secure: true,
+    sameSite: 'none',
     maxAge: 1000 * 60 * 60
   }
 }));
