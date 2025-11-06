@@ -2,7 +2,7 @@ require('dotenv').config();
 const request = require('supertest');
 const mongoose = require('mongoose');
 process.env.NODE_ENV = 'test';
-const app = require('../app');
+const app = require('../Server-https');
 
 const { User, Staff, Payment } = require('../models');
 
