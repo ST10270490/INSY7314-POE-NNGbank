@@ -36,11 +36,11 @@ jobs:
       - store_test_results:
           path: INSY7314-PaymentPortal/Backend/test-results
 
-      - sonarcloud/scan  # Add this step to run the scan
+      - sonarcloud/scan
 
 workflows:
   version: 2
   build-and-test:
     jobs:
       - build:
-          context: SonarCloud  # Reference the context with SONAR_TOKEN
+          context: SonarCloud
