@@ -19,12 +19,12 @@ jobs:
       - run:
           name: Install backend dependencies
           command: |
-            cd INSY7314-PaymentPortal/backend
+            cd INSY7314-PaymentPortal/Backend
             npm install
       - run:
           name: Run backend tests
           command: |
-            cd INSY7314-PaymentPortal/backend
+            cd INSY7314-PaymentPortal/Backend
             npm test
 
 workflows:
