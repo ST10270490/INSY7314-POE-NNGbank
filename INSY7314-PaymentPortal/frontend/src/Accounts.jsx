@@ -84,12 +84,14 @@ const Users = () => {
         </tbody>
       </table>
 
-      <button style={styles.button} onClick={handleCreateUser}>
+      <div style={styles.buttonGroup}>
+        <button style={styles.button} onClick={handleCreateUser}>
         Create User
-      </button>
-      <button type="button" onClick={toApprove} style={styles.button}>
+        </button>
+        <button type="button" onClick={toApprove} style={{ ...styles.button, marginTop: '10px' }}>
         Approve payments
-      </button>
+        </button>
+      </div>
       <button type="button" onClick={backToMain} style={styles.secondary}>
         Log out
       </button>
@@ -152,6 +154,12 @@ const styles = {
     cursor: 'pointer',
     fontSize: '1rem',
   },
+  buttonGroup: {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  marginBottom: '20px',
+},
 };
 
 export default Users;

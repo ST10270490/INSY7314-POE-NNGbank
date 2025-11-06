@@ -172,43 +172,42 @@ const routes = require('./routes');
 app.use('/', routes);
 
 // ---------- HTTPS CONFIG ----------
+// Certificates generated using openssl and openssl-san.cnf
+// To trust the cert on Windows, copy certificate.pem to certificate.crt and import it into Trusted Root Certification Authorities
+
 const KEYS_DIR = path.resolve(__dirname, 'Keys');
 const CERT_PATH = process.env.SSL_CERT_PATH || path.join(KEYS_DIR, 'certificate.pem');
 const KEY_PATH = process.env.SSL_KEY_PATH || path.join(KEYS_DIR, 'privatekey.pem');
 
 if (!fs.existsSync(CERT_PATH)) {
-  console.error(`SSL certificate not found at: ${CERT_PATH}`);
+  console.error(`❌ SSL certificate not found at: ${CERT_PATH}`);
+  console.error(`Make sure to generate it using openssl and openssl-san.cnf`);
   process.exit(1);
 }
 if (!fs.existsSync(KEY_PATH)) {
-  console.error(`SSL private key not found at: ${KEY_PATH}`);
+  console.error(`❌ SSL private key not found at: ${KEY_PATH}`);
   process.exit(1);
 }
 
 const sslOptions = {
   key: fs.readFileSync(KEY_PATH, 'utf8'),
   cert: fs.readFileSync(CERT_PATH, 'utf8'),
-  // passphrase: process.env.SSL_PASSPHRASE
 };
 
 const HTTPS_PORT = process.env.HTTPS_PORT ? parseInt(process.env.HTTPS_PORT, 10) : 3443;
 const HTTP_PORT = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT, 10) : 3000;
 
 // Create HTTPS server
-const httpsServer = https.createServer(sslOptions, app);
-httpsServer.listen(HTTPS_PORT, () => {
-  console.log(`HTTPS server running on https://localhost:${HTTPS_PORT}`);
+https.createServer(sslOptions, app).listen(HTTPS_PORT, () => {
+  console.log(`✅ HTTPS server running on https://localhost:${HTTPS_PORT}`);
 });
 
-// Create simple HTTP server that redirects to HTTPS
-const redirectApp = express();
-redirectApp.use((req, res) => {
+// Create HTTP server that redirects to HTTPS
+http.createServer((req, res) => {
   const host = req.headers.host ? req.headers.host.split(':')[0] : 'localhost';
   const targetPort = HTTPS_PORT === 443 ? '' : `:${HTTPS_PORT}`;
-  res.redirect(301, `https://${host}${targetPort}${req.originalUrl}`);
-});
-
-const httpServer = http.createServer(redirectApp);
-httpServer.listen(HTTP_PORT, () => {
-  console.log(`HTTP redirect server running on http://localhost:${HTTP_PORT} -> https://localhost:${HTTPS_PORT}`);
+  res.writeHead(301, { Location: `https://${host}${targetPort}${req.url}` });
+  res.end();
+}).listen(HTTP_PORT, () => {
+  console.log(`🌐 HTTP redirect server running on http://localhost:${HTTP_PORT} → https://localhost:${HTTPS_PORT}`);
 });
