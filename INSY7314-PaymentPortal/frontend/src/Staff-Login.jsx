@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import validator from 'validator';
 
@@ -11,6 +11,40 @@ export default function StaffLogin() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+
+  // Track last activity time
+  let lastActivityTime = Date.now();
+
+  const updateActivityTime = () => {
+    lastActivityTime = Date.now();
+  };
+
+  // Listen for user activity
+  useEffect(() => {
+    window.addEventListener('mousemove', updateActivityTime);
+    window.addEventListener('keydown', updateActivityTime);
+    window.addEventListener('click', updateActivityTime);
+
+    return () => {
+      window.removeEventListener('mousemove', updateActivityTime);
+      window.removeEventListener('keydown', updateActivityTime);
+      window.removeEventListener('click', updateActivityTime);
+    };
+  }, []);
+
+  // Check for session timeout
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const currentTime = Date.now();
+      const timeout = 10 * 60 * 1000; // 10 minutes
+
+      if (currentTime - lastActivityTime > timeout) {
+        navigate('/login');
+      }
+    }, 5 * 60 * 1000); // Every 5 minutes
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -36,13 +70,14 @@ export default function StaffLogin() {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || 'Login failed' });
-      } else {
+      if (res.ok) {
         setMessage({ type: 'success', text: data.message || 'Login successful' });
         setTimeout(() => navigate('/accounts'), 400);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Login failed' });
       }
     } catch (err) {
+      console.error('Staff login error:', err);
       setMessage({ type: 'error', text: 'Network error. Could not reach server.' });
     } finally {
       setLoading(false);
@@ -58,27 +93,25 @@ export default function StaffLogin() {
       <form onSubmit={handleLogin} style={styles.card}>
         <h2 style={styles.heading}>Staff Login</h2>
 
-        <label style={styles.label}>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-            autoComplete="username"
-          />
-        </label>
+        <label htmlFor="email" style={styles.label}>Email</label>
+        <input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
+          autoComplete="username"
+        />
 
-        <label style={styles.label}>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-            autoComplete="current-password"
-          />
-        </label>
+        <label htmlFor="password" style={styles.label}>Password</label>
+        <input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={styles.input}
+          autoComplete="current-password"
+        />
 
         {message && (
           <div

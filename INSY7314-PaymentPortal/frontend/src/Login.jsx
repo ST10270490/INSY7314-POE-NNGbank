@@ -19,7 +19,7 @@ export default function Login() {
 
   // Validation pattern for ID number (13 digits)
   const isValidIdNumber = (value) => /^[0-9]{13}$/.test(value);
-  
+
   // Handle login form submission
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -41,20 +41,21 @@ export default function Login() {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idNumber, password }),
-        
+
       });
 
       const data = await res.json();
 
-      if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || 'Login failed' });
-      } else {
+      if (res.ok) {
         setMessage({ type: 'success', text: data.message || 'Login successful' });
         setTimeout(() => navigate('/payments'), 400);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Login failed' });
       }
     } catch (err) {
       setMessage({ type: 'error', text: 'Network error. Could not reach server.' });
-    } finally {
+    }
+    finally {
       setLoading(false);
     }
   };
@@ -70,27 +71,25 @@ export default function Login() {
       <form onSubmit={handleLogin} style={styles.card}>
         <h2 style={styles.heading}>Login</h2>
 
-        <label style={styles.label}>
-          ID Number
-          <input
-            type="text"
-            value={idNumber}
-            onChange={(e) => setIdNumber(e.target.value)}
-            style={styles.input}
-            autoComplete="username"
-          />
-        </label>
+        <label htmlFor="idNumber" style={styles.label}>ID Number</label>
+        <input
+          id="idNumber"
+          type="text"
+          value={idNumber}
+          onChange={(e) => setIdNumber(e.target.value)}
+          style={styles.input}
+          autoComplete="username"
+        />
 
-        <label style={styles.label}>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-            autoComplete="current-password"
-          />
-        </label>
+        <label htmlFor="password" style={styles.label}>Password</label>
+        <input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={styles.input}
+          autoComplete="current-password"
+        />
 
         {message && (
           <div

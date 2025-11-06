@@ -14,7 +14,40 @@ export default function Register() {
 
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [sessionId, setSessionId] = useState(null);
+
+  // Track last activity time
+  let lastActivityTime = Date.now();
+
+  const updateActivityTime = () => {
+    lastActivityTime = Date.now();
+  };
+
+  // Listen for user activity
+  useEffect(() => {
+    window.addEventListener('mousemove', updateActivityTime);
+    window.addEventListener('keydown', updateActivityTime);
+    window.addEventListener('click', updateActivityTime);
+
+    return () => {
+      window.removeEventListener('mousemove', updateActivityTime);
+      window.removeEventListener('keydown', updateActivityTime);
+      window.removeEventListener('click', updateActivityTime);
+    };
+  }, []);
+
+  // Check for session timeout
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const currentTime = Date.now();
+      const timeout = 10 * 60 * 1000; // 10 minutes
+
+      if (currentTime - lastActivityTime > timeout) {
+        navigate('/login');
+      }
+    }, 5 * 60 * 1000); // Every 5 minutes
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   const isValidIdNumber = (value) => /^[0-9]{13}$/.test(value);
   const isValidName = (value) => validator.isAlpha(value.replace(/\s/g, ''));
@@ -61,64 +94,57 @@ export default function Register() {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || 'Registration failed' });
-      } else {
+      if (res.ok) {
         setMessage({ type: 'success', text: data.message || 'Registration successful' });
-        setSessionId(data.sessionId);
         setTimeout(() => navigate('/', { replace: true }), 800);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Registration failed' });
       }
     } catch (err) {
+      console.error('Registration error:', err);
       setMessage({ type: 'error', text: 'Network error. Could not reach server.' });
     } finally {
       setLoading(false);
     }
   };
 
-  const checkSessionTimeout = () => {
-    if (sessionId) {
-      const lastActivityTime = new Date(sessionId.split('-')[0]);
-      const currentTime = new Date();
-      const timeout = 10 * 60 * 1000;
-
-      if (currentTime - lastActivityTime > timeout) {
-        navigate('/login');
-      }
-    }
-  };
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      checkSessionTimeout();
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(intervalId);
-  }, [sessionId]);
-
   return (
     <div style={styles.container}>
       <form onSubmit={handleRegister} style={styles.card}>
         <h2 style={styles.heading}>Register</h2>
 
-        <label style={styles.label}>
-          ID Number
-          <input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} style={styles.input} />
-        </label>
+        <label htmlFor="idNumber" style={styles.label}>ID Number</label>
+        <input
+          id="idNumber"
+          value={idNumber}
+          onChange={(e) => setIdNumber(e.target.value)}
+          style={styles.input}
+        />
 
-        <label style={styles.label}>
-          First Name
-          <input value={firstName} onChange={(e) => setFirstName(e.target.value)} style={styles.input} />
-        </label>
+        <label htmlFor="firstName" style={styles.label}>First Name</label>
+        <input
+          id="firstName"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          style={styles.input}
+        />
 
-        <label style={styles.label}>
-          Surname
-          <input value={surname} onChange={(e) => setSurname(e.target.value)} style={styles.input} />
-        </label>
+        <label htmlFor="surname" style={styles.label}>Surname</label>
+        <input
+          id="surname"
+          value={surname}
+          onChange={(e) => setSurname(e.target.value)}
+          style={styles.input}
+        />
 
-        <label style={styles.label}>
-          Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={styles.input} />
-        </label>
+        <label htmlFor="password" style={styles.label}>Password</label>
+        <input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={styles.input}
+        />
 
         {message && (
           <div
@@ -144,22 +170,26 @@ export default function Register() {
       </form>
     </div>
   );
-}
+};
 
+// Styles remain unchanged
 const styles = {
   container: {
     padding: '2rem',
     fontFamily: 'Arial, sans-serif',
     backgroundColor: '#f9f9f9',
     minHeight: '100vh',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   card: {
-    maxWidth: '500px',
-    margin: '0 auto',
-    padding: '2rem',
     backgroundColor: '#fff',
-    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+    padding: '2rem',
     borderRadius: '8px',
+    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+    width: '100%',
+    maxWidth: '400px',
   },
   heading: {
     textAlign: 'center',
@@ -175,7 +205,7 @@ const styles = {
   input: {
     width: '100%',
     padding: '10px',
-    marginTop: '6px',
+    marginTop: '0.5rem',
     borderRadius: '4px',
     border: '1px solid #ccc',
     fontSize: '1rem',
@@ -183,14 +213,13 @@ const styles = {
   message: {
     padding: '10px',
     borderRadius: '4px',
-    marginTop: '1rem',
+    marginBottom: '1rem',
     fontWeight: 'bold',
   },
   buttonGroup: {
     display: 'flex',
-    gap: '8px',
-    marginTop: '1.5rem',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    marginTop: '1rem',
   },
   button: {
     padding: '10px 20px',
@@ -203,7 +232,7 @@ const styles = {
   },
   secondary: {
     padding: '10px 20px',
-    backgroundColor: '#ccc',
+    backgroundColor: '#ddd',
     color: '#333',
     border: 'none',
     borderRadius: '5px',

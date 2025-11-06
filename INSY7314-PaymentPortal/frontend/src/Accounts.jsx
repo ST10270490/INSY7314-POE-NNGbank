@@ -6,7 +6,13 @@ const BASE_URL = 'https://localhost:3443';
 const Users = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
-  const [sessionId, setSessionId] = useState(null);
+
+  // Track last activity time
+  let lastActivityTime = Date.now();
+
+  const updateActivityTime = () => {
+    lastActivityTime = Date.now();
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -21,40 +27,47 @@ const Users = () => {
 
       const data = await response.json();
       setUsers(data);
-      setSessionId(data.sessionId);
     } catch (error) {
       console.error(error);
     }
   };
 
-  const checkSessionTimeout = () => {
-    if (sessionId) {
-      const lastActivityTime = new Date(sessionId.split('-')[0]);
-      const currentTime = new Date();
-      const timeout = 10 * 60 * 1000;
+  // Listen for user activity
+  useEffect(() => {
+    window.addEventListener('mousemove', updateActivityTime);
+    window.addEventListener('keydown', updateActivityTime);
+    window.addEventListener('click', updateActivityTime);
+
+    return () => {
+      window.removeEventListener('mousemove', updateActivityTime);
+      window.removeEventListener('keydown', updateActivityTime);
+      window.removeEventListener('click', updateActivityTime);
+    };
+  }, []);
+
+  // Check for session timeout
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const currentTime = Date.now();
+      const timeout = 10 * 60 * 1000; // 10 minutes
 
       if (currentTime - lastActivityTime > timeout) {
         navigate('/login');
       }
-    }
-  };
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      checkSessionTimeout();
-    }, 5 * 60 * 1000);
+    }, 5 * 60 * 1000); // Every 5 minutes
 
     return () => clearInterval(intervalId);
-  }, [sessionId]);
+  }, []);
 
   const handleCreateUser = () => {
     navigate('/register');
   };
 
-    const backToMain = () => {
+  const backToMain = () => {
     navigate('/');
   };
-      const toApprove = () => {
+
+  const toApprove = () => {
     navigate('/staffpayments');
   };
 
@@ -86,16 +99,15 @@ const Users = () => {
 
       <div style={styles.buttonGroup}>
         <button style={styles.button} onClick={handleCreateUser}>
-        Create User
+          Create User
         </button>
         <button type="button" onClick={toApprove} style={{ ...styles.button, marginTop: '10px' }}>
-        Approve payments
+          Approve payments
         </button>
       </div>
       <button type="button" onClick={backToMain} style={styles.secondary}>
         Log out
       </button>
-      
     </div>
   );
 };
@@ -143,7 +155,7 @@ const styles = {
     borderRadius: '5px',
     cursor: 'pointer',
     fontSize: '1rem',
-  },  secondary: {
+  }, secondary: {
     display: 'block',
     margin: '20px auto',
     padding: '10px 20px',
@@ -155,11 +167,11 @@ const styles = {
     fontSize: '1rem',
   },
   buttonGroup: {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  marginBottom: '20px',
-},
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginBottom: '20px',
+  },
 };
 
 export default Users;

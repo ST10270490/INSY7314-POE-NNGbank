@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const { User, Payment,Staff } = require('./models');
+const validator = require('validator');
+const { User, Payment, Staff } = require('./models');
 
 const router = express.Router();
 
@@ -12,10 +13,16 @@ const hashPassword = async (password) => {
 
 // Register new user
 router.post('/register', async (req, res) => {
-  
   const { idNumber, firstName, surname, password } = req.body;
+
+  // Basic presence check
   if (!idNumber || !firstName || !surname || !password) {
     return res.status(400).json({ error: 'Please fill in all fields' });
+  }
+
+  // Validate idNumber format (e.g., numeric, length, etc.)
+  if (!validator.isAlphanumeric(idNumber) || idNumber.length > 20) {
+    return res.status(400).json({ error: 'Invalid ID number format' });
   }
 
   try {
@@ -23,13 +30,23 @@ router.post('/register', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized: Staff login required' });
     }
 
-    const existingUser = await User.findOne({ idNumber });
-    if (existingUser) return res.status(409).json({ error: 'User with this ID number already exists' });
+    // Use validated and sanitized idNumber
+    const safeIdNumber = validator.escape(idNumber);
+    const existingUser = await User.findOne({ idNumber: safeIdNumber });
+
+    if (existingUser) {
+      return res.status(409).json({ error: 'User with this ID number already exists' });
+    }
 
     const hashedPassword = await hashPassword(password);
-    const newUser = new User({ idNumber, firstName, surname, password: hashedPassword });
-    await newUser.save();
+    const newUser = new User({
+      idNumber: safeIdNumber,
+      firstName: validator.escape(firstName),
+      surname: validator.escape(surname),
+      password: hashedPassword
+    });
 
+    await newUser.save();
     res.status(201).json({ message: 'Registration successful' });
   } catch (error) {
     console.error(error);
@@ -40,60 +57,97 @@ router.post('/register', async (req, res) => {
 // Register new staff
 router.post('/register-staff', async (req, res) => {
   const { email, firstName, surname, password } = req.body;
+
+  // Basic presence check
   if (!email || !firstName || !surname || !password) {
     return res.status(400).json({ error: 'Please fill in all fields' });
   }
 
+  // Validate email format
+  if (!validator.isEmail(email) || email.length > 100) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+
   try {
-    const existingStaff = await Staff.findOne({ email });
-    if (existingStaff) return res.status(409).json({ error: 'User with this ID number already exists' });
+    // Sanitize inputs
+    const safeEmail = validator.normalizeEmail(email);
+    const safeFirstName = validator.escape(firstName);
+    const safeSurname = validator.escape(surname);
+
+    // Use sanitized email in query
+    const existingStaff = await Staff.findOne({ email: safeEmail });
+    if (existingStaff) {
+      return res.status(409).json({ error: 'Staff with this email already exists' });
+    }
 
     const hashedPassword = await hashPassword(password);
-    const newStaff = new Staff({ email, firstName, surname, password: hashedPassword });
-    await newStaff.save();
+    const newStaff = new Staff({
+      email: safeEmail,
+      firstName: safeFirstName,
+      surname: safeSurname,
+      password: hashedPassword
+    });
 
+    await newStaff.save();
     res.status(201).json({ message: 'Registration successful' });
   } catch (error) {
-    console.error(error);
+    console.error('Staff registration error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
+
 // Handle POST request to login
 router.post('/login', async (req, res) => {
   const { idNumber, password } = req.body;
-  if (!idNumber || !password) return res.status(400).json({ error: 'Please fill in all fields' });
+
+  if (!idNumber || !password) {
+    return res.status(400).json({ error: 'Please fill in all fields' });
+  }
+
+  // Validate and sanitize idNumber
+  if (!validator.isAlphanumeric(idNumber) || idNumber.length > 20) {
+    return res.status(400).json({ error: 'Invalid ID number format' });
+  }
 
   try {
-    const user = await User.findOne({ idNumber }).select('+password');
+    const safeIdNumber = validator.escape(idNumber);
+    const user = await User.findOne({ idNumber: safeIdNumber }).select('+password');
+
     if (!user || !await bcrypt.compare(password, user.password)) {
       return res.status(401).json({ error: 'Invalid ID number or password' });
     }
 
     req.session.idNumber = user.idNumber;
-
     req.session.lastActivity = Date.now();
-    
 
     req.session.save(() => {
-
-  res.status(200).json({ message: 'Login successful' });
-});
+      res.status(200).json({ message: 'Login successful' });
+    });
   } catch (error) {
-    console.error(error);
+    console.error('User login error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
+
 // Handle POST request to login staff
 router.post('/staff-login', async (req, res) => {
   const { email, password } = req.body;
+
   if (!email || !password) {
     return res.status(400).json({ error: 'Please fill in all fields' });
   }
 
+  // Validate and sanitize email
+  if (!validator.isEmail(email) || email.length > 100) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+
   try {
-    const staff = await Staff.findOne({ email }).select('+password');
+    const safeEmail = validator.normalizeEmail(email);
+    const staff = await Staff.findOne({ email: safeEmail }).select('+password');
+
     if (!staff || !await bcrypt.compare(password, staff.password)) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
@@ -107,6 +161,7 @@ router.post('/staff-login', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 // Handle GET request to fetch all user accounts
 router.get('/users', async (req, res) => {
@@ -154,7 +209,7 @@ router.get('/payments', async (req, res) => {
 
 // Handle GET request to fetch all payments for staff
 router.get('/staffpayments', async (req, res) => {
-  
+
   try {
     if (!req.session.staffId) {
       return res.status(401).json({ error: 'Unauthorized: Staff login required' });

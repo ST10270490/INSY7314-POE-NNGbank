@@ -1,5 +1,5 @@
 // Import necessary React hooks and navigation utility
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Status } from './enums';
 import validator from 'validator';
@@ -23,6 +23,7 @@ const CreatePayment = () => {
 
   // Validation helpers
   const isValidAccountNumber = (value) => validator.isNumeric(value);
+  // SonarQube: replaceAll not suitable here due to regex use
   const isValidName = (value) => validator.isAlpha(value.replace(/\s/g, ''));
   const isValidBranchCode = (value) => validator.isLength(value, { min: 6, max: 6 }) && validator.isNumeric(value);
   const isValidAmount = (value) => validator.isFloat(value, { min: 0 });
@@ -61,7 +62,7 @@ const CreatePayment = () => {
     }
   };
 
-  const checkSessionTimeout = () => {
+  const checkSessionTimeout = useCallback(() => {
     if (sessionId) {
       const lastActivityTime = new Date(sessionId.split('-')[0]);
       const currentTime = new Date();
@@ -71,7 +72,7 @@ const CreatePayment = () => {
         navigate('/login');
       }
     }
-  };
+  }, [sessionId, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -100,69 +101,71 @@ const CreatePayment = () => {
     }, 5 * 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [sessionId]);
+  }, [checkSessionTimeout]);
+
 
   return (
     <div style={styles.container}>
       <form onSubmit={handleSubmit} style={styles.card}>
         <h2 style={styles.heading}>Create Payment</h2>
 
-        <label style={styles.label}>
-          Paid From Account
-          <input
-            type="text"
-            name="paidFromAccount"
-            value={formData.paidFromAccount}
-            onChange={handleChange}
-            style={styles.input}
-          />
-        </label>
+        <label htmlFor="paidFromAccount" style={styles.label}>Paid From Account</label>
+        <input
+          id="paidFromAccount"
+          type="text"
+          name="paidFromAccount"
+          value={formData.paidFromAccount}
+          onChange={handleChange}
+          style={styles.input}
+        />
 
-        <label style={styles.label}>
-          Recipient Name
-          <input
-            type="text"
-            name="recipientName"
-            value={formData.recipientName}
-            onChange={handleChange}
-            style={styles.input}
-          />
-        </label>
+        <label htmlFor="recipientName" style={styles.label}>Recipient Name</label>
+        <input
+          id="recipientName"
+          type="text"
+          name="recipientName"
+          value={formData.recipientName}
+          onChange={handleChange}
+          style={styles.input}
+        />
 
-        <label style={styles.label}>
-          Recipient Account Number
-          <input
-            type="text"
-            name="recipientAccountNumber"
-            value={formData.recipientAccountNumber}
-            onChange={handleChange}
-            style={styles.input}
-          />
-        </label>
+        <label htmlFor="recipientAccountNumber" style={styles.label}>Recipient Account Number</label>
+        <input
+          id="recipientAccountNumber"
+          type="text"
+          name="recipientAccountNumber"
+          value={formData.recipientAccountNumber}
+          onChange={handleChange}
+          style={styles.input}
+        />
 
-        <label style={styles.label}>
-          Branch Code
-          <input
-            type="text"
-            name="branchCode"
-            value={formData.branchCode}
-            onChange={handleChange}
-            style={styles.input}
-          />
-        </label>
+        <label htmlFor="branchCode" style={styles.label}>Branch Code</label>
+        <input
+          id="branchCode"
+          type="text"
+          name="branchCode"
+          value={formData.branchCode}
+          onChange={handleChange}
+          style={styles.input}
+        />
 
-        <label style={styles.label}>
-          Amount
-          <input
-            type="number"
-            name="amount"
-            value={formData.amount}
-            onChange={handleChange}
-            style={styles.input}
-          />
-        </label>
+        <label htmlFor="amount" style={styles.label}>Amount</label>
+        <input
+          id="amount"
+          type="number"
+          name="amount"
+          value={formData.amount}
+          onChange={handleChange}
+          style={styles.input}
+        />
 
-        <input type="hidden" name="status" value={formData.status} readOnly />
+        <input
+          id="status"
+          type="hidden"
+          name="status"
+          value={formData.status}
+          readOnly
+        />
 
         <div style={styles.actions}>
           <button type="submit" style={styles.primary}>
@@ -172,6 +175,7 @@ const CreatePayment = () => {
             Back to Payments
           </button>
         </div>
+
       </form>
     </div>
   );

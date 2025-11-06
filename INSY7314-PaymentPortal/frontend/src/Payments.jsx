@@ -1,78 +1,75 @@
-// Import React hooks and navigation utility
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// Base URL for API requests
 const BASE_URL = 'https://localhost:3443';
 
-// Component to display list of payments
 const Payments = () => {
   const navigate = useNavigate();
-
-  // State to store fetched payments
   const [payments, setPayments] = useState([]);
 
-  // State to track session activity
-  const [sessionId, setSessionId] = useState(null);
+  // Track last activity time
+  let lastActivityTime = Date.now();
 
-  // Fetch payments when component mounts
+  const updateActivityTime = () => {
+    lastActivityTime = Date.now();
+  };
+
   useEffect(() => {
     fetchPayments();
   }, []);
 
-  // Fetch payment data from server
   const fetchPayments = async () => {
     try {
       const response = await fetch(`${BASE_URL}/payments`, {
-      method: 'GET',
-      credentials: 'include'
-});
+        method: 'GET',
+        credentials: 'include'
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch payments');
       }
 
       const data = await response.json();
-
-      // Store payments and session ID
       setPayments(data);
-      setSessionId(data.sessionId);
     } catch (error) {
       console.error(error);
     }
   };
 
-  // Check if session has expired and redirect if needed
-  const checkSessionTimeout = () => {
-    if (sessionId) {
-      const lastActivityTime = new Date(sessionId.split('-')[0]);
-      const currentTime = new Date();
+  // Listen for user activity
+  useEffect(() => {
+    window.addEventListener('mousemove', updateActivityTime);
+    window.addEventListener('keydown', updateActivityTime);
+    window.addEventListener('click', updateActivityTime);
+
+    return () => {
+      window.removeEventListener('mousemove', updateActivityTime);
+      window.removeEventListener('keydown', updateActivityTime);
+      window.removeEventListener('click', updateActivityTime);
+    };
+  }, []);
+
+  // Check for session timeout
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const currentTime = Date.now();
       const timeout = 10 * 60 * 1000; // 10 minutes
 
       if (currentTime - lastActivityTime > timeout) {
-        navigate('/login'); // Redirect to login if session expired
+        navigate('/login');
       }
-    }
-  };
-
-  // Set up periodic session timeout check
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      checkSessionTimeout();
     }, 5 * 60 * 1000); // Every 5 minutes
 
-    return () => clearInterval(intervalId); // Clean up on unmount
-  }, [sessionId]);
+    return () => clearInterval(intervalId);
+  }, []);
 
-  // Navigate to create payment form
   const handleCreatePayment = () => {
     navigate('/create-payment');
   };
 
-    const backToMain = () => {
+  const backToMain = () => {
     navigate('/');
   };
 
-  // Render payment table and button
   return (
     <div style={styles.container}>
       <h1 style={styles.heading}>Payments</h1>
@@ -88,25 +85,25 @@ const Payments = () => {
           </tr>
         </thead>
         <tbody>
-            {payments.map(payment => (
-              <tr key={payment._id} style={styles.tr}>
+          {payments.map(payment => (
+            <tr key={payment._id} style={styles.tr}>
               <td style={styles.td}>{payment.paidFromAccount}</td>
               <td style={styles.td}>{payment.recipientName}</td>
               <td style={styles.td}>{payment.recipientAccountNumber}</td>
               <td style={styles.td}>{payment.branchCode}</td>
               <td style={styles.td}>{payment.amount}</td>
               <td style={styles.td}>
-            {payment.status === 'Pending' ? (
-            <span style={{ color: 'red' }}>Pending</span>
-            ) : payment.status === 'Completed' ? (
-            <span style={{ color: 'green' }}>Completed</span>
-            ) : (
-          <span style={{ color: 'orange' }}>Failed</span>
-        )}
-      </td>
-    </tr>
-  ))}
-      </tbody>
+                {payment.status === 'Pending' ? (
+                  <span style={{ color: 'red' }}>Pending</span>
+                ) : payment.status === 'Completed' ? (
+                  <span style={{ color: 'green' }}>Completed</span>
+                ) : (
+                  <span style={{ color: 'orange' }}>Failed</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
       </table>
 
       <button style={styles.button} onClick={handleCreatePayment}>

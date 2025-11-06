@@ -2,10 +2,10 @@
 require('dotenv').config();
 
 // Core modules and dependencies
-const fs = require('fs'); // File system access
-const path = require('path'); // Path utilities
-const https = require('https'); // HTTPS server
-const http = require('http'); // HTTP server
+const fs = require('node:fs');       // File system access
+const path = require('node:path');   // Path utilities
+const https = require('node:https'); // HTTPS server
+const http = require('node:http');   // HTTP server
 const express = require('express'); // Web framework
 const bodyParser = require('body-parser'); // Parse incoming request bodies
 const bcrypt = require('bcrypt'); // Password hashing
@@ -44,8 +44,8 @@ const allowedOrigin = process.env.FRONTEND_ORIGIN || 'https://localhost:3001';
 app.use(cors({
   origin: allowedOrigin,
   credentials: true,
-  methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 
 }));
 
@@ -194,20 +194,24 @@ const sslOptions = {
   cert: fs.readFileSync(CERT_PATH, 'utf8'),
 };
 
-const HTTPS_PORT = process.env.HTTPS_PORT ? parseInt(process.env.HTTPS_PORT, 10) : 3443;
-const HTTP_PORT = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT, 10) : 3000;
+const HTTPS_PORT = process.env.HTTPS_PORT ? Number.parseInt(process.env.HTTPS_PORT, 10) : 3443;
+const HTTP_PORT = process.env.HTTP_PORT ? Number.parseInt(process.env.HTTP_PORT, 10) : 3000;
+const trustedHost = process.env.TRUSTED_HOST || 'localhost';
+const targetPort = HTTPS_PORT === 443 ? '' : `:${HTTPS_PORT}`;
 
 // Create HTTPS server
 https.createServer(sslOptions, app).listen(HTTPS_PORT, () => {
   console.log(`✅ HTTPS server running on https://localhost:${HTTPS_PORT}`);
 });
 
-// Create HTTP server that redirects to HTTPS
+// Create HTTP server that safely redirects to HTTPS
 http.createServer((req, res) => {
-  const host = req.headers.host ? req.headers.host.split(':')[0] : 'localhost';
-  const targetPort = HTTPS_PORT === 443 ? '' : `:${HTTPS_PORT}`;
-  res.writeHead(301, { Location: `https://${host}${targetPort}${req.url}` });
+  const safePath = encodeURI(req.url || '/');
+
+  res.writeHead(301, {
+    Location: `https://${trustedHost}${targetPort}${safePath}`
+  });
   res.end();
 }).listen(HTTP_PORT, () => {
-  console.log(`🌐 HTTP redirect server running on http://localhost:${HTTP_PORT} → https://localhost:${HTTPS_PORT}`);
+  console.log(`🌐 Safe HTTP redirect server running on http://localhost:${HTTP_PORT} → https://${trustedHost}${targetPort}`);
 });
