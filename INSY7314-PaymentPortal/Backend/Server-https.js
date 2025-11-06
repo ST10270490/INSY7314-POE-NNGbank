@@ -216,4 +216,24 @@ http.createServer((req, res) => {
   console.log(`🌐 Safe HTTP redirect server running on http://localhost:${HTTP_PORT} → https://${trustedHost}${targetPort}`);
 });
 
+const isTestEnv = process.env.NODE_ENV === 'test';
+
+if (!isTestEnv) {
+  // Create HTTPS server
+  https.createServer(sslOptions, app).listen(HTTPS_PORT, () => {
+    console.log(`✅ HTTPS server running on https://localhost:${HTTPS_PORT}`);
+  });
+
+  // Create HTTP redirect server
+  http.createServer((req, res) => {
+    const safePath = encodeURI(req.url || '/');
+    res.writeHead(301, {
+      Location: `https://${trustedHost}${targetPort}${safePath}`
+    });
+    res.end();
+  }).listen(HTTP_PORT, () => {
+    console.log(`🌐 Safe HTTP redirect server running on http://localhost:${HTTP_PORT}`);
+  });
+}
+
 module.exports = app;

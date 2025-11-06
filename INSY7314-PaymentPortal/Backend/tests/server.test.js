@@ -3,6 +3,7 @@ const request = require('supertest');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+process.env.NODE_ENV = 'test';
 const app = require('../Server-https');
 
 
