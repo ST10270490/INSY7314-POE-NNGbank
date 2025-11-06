@@ -215,3 +215,5 @@ http.createServer((req, res) => {
 }).listen(HTTP_PORT, () => {
   console.log(`🌐 Safe HTTP redirect server running on http://localhost:${HTTP_PORT} → https://${trustedHost}${targetPort}`);
 });
+
+module.exports = app;

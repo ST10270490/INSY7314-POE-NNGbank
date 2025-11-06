@@ -1,7 +1,8 @@
 require('dotenv').config();
 const request = require('supertest');
 const mongoose = require('mongoose');
-const app = require('../server');
+const app = require('../Server-https');
+
 const { User, Staff, Payment } = require('../models');
 
 const agent = request.agent(app);
