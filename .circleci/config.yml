@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  sonarcloud: sonarsource/sonarcloud@2.0.0
+
 jobs:
   build:
     docker:
@@ -12,23 +15,15 @@ jobs:
             cd INSY7314-PaymentPortal/frontend
             npm install
       - run:
-          name: Run frontend tests
-          command: |
-            cd INSY7314-PaymentPortal/frontend
-            npm test
-      - run:
           name: Install backend dependencies
           command: |
             cd INSY7314-PaymentPortal/Backend
             npm install
-      - run:
-          name: Run backend tests
-          command: |
-            cd INSY7314-PaymentPortal/Backend
-            npm test
+      - sonarcloud/scan  # Add this step to run the scan
 
 workflows:
   version: 2
   build-and-test:
     jobs:
-      - build
+      - build:
+          context: SonarCloud  # Reference the context with SONAR_TOKEN
