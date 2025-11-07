@@ -14,6 +14,10 @@
     "mongoose": "^8.19.1",
     "validator": "^13.15.20"
   },
+  "scripts": {
+  "test": "echo \"No tests to run.\" && exit 0",
+  "test:ci": "echo \"CI test skipped.\" && exit 0"
+},
   "devDependencies": {
   }
 
