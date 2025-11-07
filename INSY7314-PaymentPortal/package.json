@@ -20,8 +20,8 @@
     "supertest": "^7.1.4"
   },
   "scripts": {
-  "test": "jest",
-  "test:ci": "jest --coverage --ci --reporters=default --reporters=jest-junit --testPathPattern='(routes|server|models).test.js'"
+    "test": "jest",
+    "test:ci": "jest --coverage --ci --reporters=default --reporters=jest-junit --testPathPattern='routes.test.js|server.test.js|models.test.js'"
   },
   "jest-junit": {
     "outputDirectory": "test-results",
