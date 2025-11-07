@@ -21,7 +21,7 @@
   },
   "scripts": {
     "test": "jest",
-    "test:ci": "jest --coverage --ci --reporters=default --reporters=jest-junit --testPathPattern='routes.test.js|server.test.js|models.test.js'"
+    "test:ci": "jest --coverage --ci --reporters=default --reporters=jest-junit"
   },
   "jest-junit": {
     "outputDirectory": "test-results",
