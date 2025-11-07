@@ -145,12 +145,18 @@ if (process.env.TRUST_PROXY === 'true') {
   app.set('trust proxy', 1);
 }
 
+if (!uri) {
+  throw new Error('Missing MONGODB_URI for session store');
+}
+
 // Configure MongoDB session store
 const sessionStore = MongoStore.create({
   mongoUrl: uri,
   collectionName: 'sessions',
-  ttl: 1 * 24 * 60 * 60 // 1 days
+  ttl: 1 * 24 * 60 * 60
 });
+
+
 
 // Setup session middleware
 app.use(session({

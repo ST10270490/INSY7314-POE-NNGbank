@@ -3,21 +3,15 @@ const mongoose = require('mongoose');
 const { User, Staff, Payment } = require('../models');
 
 describe('Model Validation Tests', () => {
-const { MongoMemoryServer } = require('mongodb-memory-server');
+  beforeAll(async () => {
+    const uri = process.env.MONGODB_URI;
+    if (!uri) throw new Error('Missing MONGODB_URI in .env or CI environment');
+    await mongoose.connect(uri);
+  });
 
-let mongoServer;
-
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const uri = mongoServer.getUri();
-  await mongoose.connect(uri);
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
-});
-
+  afterAll(async () => {
+    await mongoose.disconnect();
+  });
 
   describe('User Model', () => {
     test('valid user passes schema validation', async () => {
