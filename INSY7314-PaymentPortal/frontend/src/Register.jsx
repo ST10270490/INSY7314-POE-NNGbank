@@ -83,6 +83,7 @@ export default function Register() {
     try {
       const res = await fetch(`${BASE_URL}/register`, {
         method: 'POST',
+        credentials: 'include', // ✅ This sends the session cookie!
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           idNumber: idNumber.trim(),
@@ -96,7 +97,7 @@ export default function Register() {
 
       if (res.ok) {
         setMessage({ type: 'success', text: data.message || 'Registration successful' });
-        setTimeout(() => navigate('/', { replace: true }), 800);
+        setTimeout(() => navigate('/accounts', { replace: true }), 800);
       } else {
         setMessage({ type: 'error', text: data.error || 'Registration failed' });
       }
@@ -163,8 +164,8 @@ export default function Register() {
             {loading ? 'Registering...' : 'Register'}
           </button>
 
-          <button type="button" onClick={() => navigate('/')} style={styles.secondary}>
-            Back to Login
+          <button type="button" onClick={() => navigate('/accounts')} style={styles.secondary}>
+            Back to Accounts
           </button>
         </div>
       </form>
