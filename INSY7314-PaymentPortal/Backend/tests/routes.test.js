@@ -9,11 +9,23 @@ const { User, Staff } = require('../models');
 const agent = request.agent(app);
 
 describe('Route Logic & Access Control (Read-Only CI)', () => {
-  beforeAll(async () => {
-    const uri = process.env.MONGODB_URI;
-    if (!uri) throw new Error('Missing MONGODB_URI in .env');
-    await mongoose.connect(uri);
+beforeAll(async () => {
+  const uri = process.env.MONGODB_URI;
+  await mongoose.connect(uri);
+
+  // Login staff to establish session
+  await agent.post('/staff-login').send({
+    email: 'test@example.com',
+    password: 'Password123%'
   });
+
+  // Login user to establish session
+  await agent.post('/login').send({
+    idNumber: '1234567890123',
+    password: 'Tiago123%'
+  });
+});
+
 
   afterAll(async () => {
     await mongoose.disconnect();
@@ -30,12 +42,12 @@ describe('Route Logic & Access Control (Read-Only CI)', () => {
     });
 
     test('logs in staff (if exists)', async () => {
-      const staff = await Staff.findOne({ email: 'staff@example.com' }).select('+password');
+      const staff = await Staff.findOne({ email: 'test@example.com' }).select('+password');
       if (!staff) return;
 
       const res = await agent.post('/staff-login').send({
-        email: 'staff@example.com',
-        password: 'securepass123'
+        email: 'test@example.com',
+        password: 'Password123%'
       });
       expect(res.status).toBe(200);
       expect(res.body.message).toBe('Login successful');
@@ -58,7 +70,7 @@ describe('Route Logic & Access Control (Read-Only CI)', () => {
 
       const res = await agent.post('/login').send({
         idNumber: '1234567890123',
-        password: 'userpass'
+        password: 'Tiago123%'
       });
       expect(res.status).toBe(200);
       expect(res.body.message).toBe('Login successful');

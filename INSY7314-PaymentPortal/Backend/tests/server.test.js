@@ -6,6 +6,7 @@ const path = require('path');
 process.env.NODE_ENV = 'test';
 const app = require('../Server-https');
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const KEYS_DIR = path.resolve(__dirname, '../Keys');
 const sslOptions = {

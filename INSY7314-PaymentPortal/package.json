@@ -21,7 +21,7 @@
   },
   "scripts": {
     "test": "jest",
-    "test:ci": "jest --coverage --ci --reporters=default --reporters=jest-junit"
+    "test:ci": "jest --coverage --ci --reporters=default --reporters=jest-junit --detectOpenHandles"
   },
   "jest-junit": {
     "outputDirectory": "test-results",
