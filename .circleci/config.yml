@@ -24,7 +24,7 @@ jobs:
             npm install
 
       - run:
-          name: Run backend tests with coverage
+          name: Run backend tests (read-only)
           command: |
             cd INSY7314-PaymentPortal/Backend
             npm run test:ci
