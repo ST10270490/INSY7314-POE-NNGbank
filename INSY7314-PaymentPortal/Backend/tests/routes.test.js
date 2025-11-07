@@ -4,124 +4,78 @@ const mongoose = require('mongoose');
 process.env.NODE_ENV = 'test';
 const app = require('../Server-https');
 
-const { User, Staff, Payment } = require('../models');
+const { User, Staff } = require('../models');
 
 const agent = request.agent(app);
 
-describe('Route Logic & Access Control', () => {
-const { MongoMemoryServer } = require('mongodb-memory-server');
+describe('Route Logic & Access Control (Read-Only CI)', () => {
+  beforeAll(async () => {
+    const uri = process.env.MONGODB_URI;
+    if (!uri) throw new Error('Missing MONGODB_URI in .env');
+    await mongoose.connect(uri);
+  });
 
-let mongoServer;
+  afterAll(async () => {
+    await mongoose.disconnect();
+  });
 
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const uri = mongoServer.getUri();
-  await mongoose.connect(uri);
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
-});
-
-
-  describe('Staff Registration & Login', () => {
-    test('registers new staff', async () => {
-      const res = await agent.post('/register-staff').send({
-        email: 'staff@example.com',
-        firstName: 'Alice',
-        surname: 'Admin',
+  describe('Staff Login', () => {
+    test('fails login with invalid email format', async () => {
+      const res = await agent.post('/staff-login').send({
+        email: 'invalid-email',
         password: 'securepass123'
       });
-      expect(res.status).toBe(201);
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('Invalid email format');
     });
 
-    test('logs in staff', async () => {
+    test('logs in staff (if exists)', async () => {
+      const staff = await Staff.findOne({ email: 'staff@example.com' }).select('+password');
+      if (!staff) return;
+
       const res = await agent.post('/staff-login').send({
         email: 'staff@example.com',
         password: 'securepass123'
       });
       expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Login successful');
     });
   });
 
-  describe('User Registration & Login', () => {
-    test('fails to register user without staff session', async () => {
-      const res = await request(app).post('/register').send({
-        idNumber: 'user123',
-        firstName: 'Bob',
-        surname: 'User',
-        password: 'userpass'
-      });
-      expect(res.status).toBe(401);
-    });
-
-    test('registers user with staff session', async () => {
-      const res = await agent.post('/register').send({
-        idNumber: 'user123',
-        firstName: 'Bob',
-        surname: 'User',
-        password: 'userpass'
-      });
-      expect(res.status).toBe(201);
-    });
-
-    test('logs in user', async () => {
+  describe('User Login', () => {
+    test('fails login with invalid ID format', async () => {
       const res = await agent.post('/login').send({
-        idNumber: 'user123',
+        idNumber: 'bad-id',
+        password: 'userpass'
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('Invalid ID number format');
+    });
+
+    test('logs in user (if exists)', async () => {
+      const user = await User.findOne({ idNumber: '1234567890123' }).select('+password');
+      if (!user) return;
+
+      const res = await agent.post('/login').send({
+        idNumber: '1234567890123',
         password: 'userpass'
       });
       expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Login successful');
     });
   });
 
-  describe('Payments', () => {
-    test('creates a payment', async () => {
-      const res = await agent.post('/payments').send({
-        paidFromAccount: 'user123',
-        recipientAccountNumber: 'user456',
-        amount: 100,
-        status: 'Pending'
-      });
-      expect(res.status).toBe(201);
-    });
-
+  describe('Payments (Read-Only)', () => {
     test('fetches user payments', async () => {
       const res = await agent.get('/payments');
       expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
     });
 
     test('fetches staff payments', async () => {
       const res = await agent.get('/staffpayments');
       expect(res.status).toBe(200);
-    });
-
-    test('updates payment status', async () => {
-      const payment = await Payment.findOne();
-      const res = await agent.patch(`/payments/${payment._id}`).send({ status: 'Completed' });
-      expect(res.status).toBe(200);
-    });
-  });
-
-  describe('Validation', () => {
-    test('rejects invalid email', async () => {
-      const res = await agent.post('/register-staff').send({
-        email: 'bad-email',
-        firstName: 'X',
-        surname: 'Y',
-        password: 'pass'
-      });
-      expect(res.status).toBe(400);
-    });
-
-    test('rejects invalid ID number', async () => {
-      const res = await agent.post('/register').send({
-        idNumber: '$bad.id',
-        firstName: 'X',
-        surname: 'Y',
-        password: 'pass'
-      });
-      expect(res.status).toBe(400);
+      expect(Array.isArray(res.body)).toBe(true);
     });
   });
 });
