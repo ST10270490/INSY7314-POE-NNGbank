@@ -200,9 +200,9 @@ const sslOptions = {
   cert: fs.readFileSync(CERT_PATH, 'utf8'),
 };
 
-const isTestEnv = process.env.NODE_ENV === 'test';
-const HTTPS_PORT = isTestEnv ? 4443 : (process.env.HTTPS_PORT || 3443);
-const HTTP_PORT = isTestEnv ? 4000 : (process.env.HTTP_PORT || 3000);
+
+const HTTPS_PORT = parseInt(process.env.HTTPS_PORT || '3443', 10);
+const HTTP_PORT = parseInt(process.env.HTTP_PORT || '3000', 10);
 
 const trustedHost = process.env.TRUSTED_HOST || 'localhost';
 const targetPort = HTTPS_PORT === 443 ? '' : `:${HTTPS_PORT}`;
@@ -223,24 +223,5 @@ http.createServer((req, res) => {
 }).listen(HTTP_PORT, () => {
   console.log(`🌐 Safe HTTP redirect server running on http://localhost:${HTTP_PORT} → https://${trustedHost}${targetPort}`);
 });
-
-
-if (!isTestEnv) {
-  // Create HTTPS server
-  https.createServer(sslOptions, app).listen(HTTPS_PORT, () => {
-    console.log(`✅ HTTPS server running on https://localhost:${HTTPS_PORT}`);
-  });
-
-  // Create HTTP redirect server
-  http.createServer((req, res) => {
-    const safePath = encodeURI(req.url || '/');
-    res.writeHead(301, {
-      Location: `https://${trustedHost}${targetPort}${safePath}`
-    });
-    res.end();
-  }).listen(HTTP_PORT, () => {
-    console.log(`🌐 Safe HTTP redirect server running on http://localhost:${HTTP_PORT}`);
-  });
-}
 
 module.exports = app;
