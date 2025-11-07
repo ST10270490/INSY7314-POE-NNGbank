@@ -201,8 +201,8 @@ const sslOptions = {
 };
 
 
-const HTTPS_PORT = parseInt(process.env.HTTPS_PORT || '3443', 10);
-const HTTP_PORT = parseInt(process.env.HTTP_PORT || '3000', 10);
+const HTTPS_PORT = Number.parseInt(process.env.HTTPS_PORT || '3443', 10);
+const HTTP_PORT = Number.parseInt(process.env.HTTP_PORT || '3000', 10);
 
 const trustedHost = process.env.TRUSTED_HOST || 'localhost';
 const targetPort = HTTPS_PORT === 443 ? '' : `:${HTTPS_PORT}`;
